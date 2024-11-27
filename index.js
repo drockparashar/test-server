@@ -37,16 +37,16 @@ const SensorData = mongoose.model("SensorData", sensorDataSchema);
 
   app.post("/api/sensor-data", async (req, res) => {
     try {
-      const { distance } = req.body; // ESP8266 will send distance in the request body
+      const { distances } = req.body; // Expecting an array of distances
   
       // Validate the incoming data
-      if (typeof distance !== "number" || distance < 0) {
-        return res.status(400).json({ error: "Invalid distance value" });
+      if (!Array.isArray(distances) || distances.some(d => typeof d !== "number" || d < 0)) {
+        return res.status(400).json({ error: "Invalid distances data" });
       }
   
-      // Save the data to MongoDB
-      const newSensorData = new SensorData({ distance });
-      await newSensorData.save();
+      // Save each distance as a new document in MongoDB
+      const sensorDataArray = distances.map(distance => ({ distance }));
+      await SensorData.insertMany(sensorDataArray);
   
       res.status(201).json({ message: "Sensor data saved successfully" });
     } catch (error) {
@@ -54,5 +54,5 @@ const SensorData = mongoose.model("SensorData", sensorDataSchema);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-
+  
 app.listen(PORT, "0.0.0.0", () => console.log(`Server is running on PORT: ${PORT}`));
